@@ -1,0 +1,5 @@
+{
+  "name": "Employee Management Dashboard",
+  "description": "A professional employee management dashboard with authentication, CRUD operations, local storage persistence, and print functionality using React, Redux, and Tailwind CSS.",
+  "requestFramePermissions": []
+}
