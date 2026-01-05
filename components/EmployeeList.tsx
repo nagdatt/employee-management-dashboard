@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/store';
 import { deleteEmployee, toggleEmployeeStatus } from '../store/employeeSlice';
 import { Employee } from '../types';
-import { Edit2, Trash2, Printer, Search, User, Users, Activity, CheckCircle, XCircle } from 'lucide-react';
+import { Edit2, Trash2, Printer, Search, User, Users, Activity, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import CustomSelect, { Option } from './CustomSelect';
 
 interface EmployeeListProps {
@@ -18,6 +18,15 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
   const [filterGender, setFilterGender] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterGender, filterStatus]);
 
   const filteredEmployees = employees.filter(emp => {
     const matchesSearch = (emp.firstName + ' ' + emp.lastName).toLowerCase().includes(searchTerm.toLowerCase());
@@ -28,9 +37,26 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
     return matchesSearch && matchesGender && matchesStatus;
   });
 
+  // Sort employees to show latest added first (reverse the array)
+  const sortedEmployees = [...filteredEmployees].reverse();
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedEmployees.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentEmployees = sortedEmployees.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   const handleDelete = (id: string) => {
     dispatch(deleteEmployee(id));
     setDeleteConfirmId(null);
+    if (currentEmployees.length === 1 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const handlePrintRow = (employee: Employee) => {
@@ -120,7 +146,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
         </div>
       </div>
 
-      <div className="overflow-x-auto min-h-[400px]">
+      <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -133,65 +159,64 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
-            {filteredEmployees.length > 0 ? (
-              filteredEmployees.map((employee) => (
+            {currentEmployees.length > 0 ? (
+              currentEmployees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-3 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
+                      <div className="flex-shrink-0 h-9 w-9">
                         {employee.photo ? (
-                          <img className="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm" src={employee.photo} alt="" />
+                          <img className="h-9 w-9 rounded-full object-cover border border-slate-200 shadow-sm" src={employee.photo} alt="" />
                         ) : (
-                          <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                            <User size={20} />
+                          <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <User size={18} />
                           </div>
                         )}
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-slate-900">{employee.firstName} {employee.lastName}</div>
-                        <div className="text-sm text-slate-500">{employee.email}</div>
-                        <div className="text-xs text-slate-400">ID: {employee.id}</div>
+                        <div className="text-xs text-slate-500">{employee.email}</div>
+                        <div className="text-[10px] text-slate-400">ID: {employee.id}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <td className="px-6 py-3 whitespace-nowrap text-sm text-slate-500">
                     <span className="inline-flex items-center">
                        {employee.gender}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <td className="px-6 py-3 whitespace-nowrap text-sm text-slate-500">
                     {employee.dob}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <td className="px-6 py-3 whitespace-nowrap text-sm text-slate-500">
                     {employee.state}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <button 
-                      onClick={() => dispatch(toggleEmployeeStatus(employee.id))}
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200 shadow-sm ${
-                        employee.isActive 
-                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
-                        : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                      }`}
-                    >
-                      {employee.isActive ? (
-                        <CheckCircle size={14} className="mr-1" />
-                      ) : (
-                        <XCircle size={14} className="mr-1" />
-                      )}
-                      {employee.isActive ? 'Active' : 'Inactive'}
-                    </button>
+                  <td className="px-6 py-3 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center space-x-3">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={employee.isActive}
+                            onChange={() => dispatch(toggleEmployeeStatus(employee.id))}
+                            className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-red-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                      </label>
+                      <span className={`text-xs font-medium w-14 text-left ${employee.isActive ? 'text-slate-900' : 'text-slate-500'}`}>
+                        {employee.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium print:hidden">
-                    <div className="flex items-center justify-end space-x-3">
-                       <button onClick={() => onEdit(employee)} className="text-blue-600 hover:text-blue-900 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-colors" title="Edit">
-                        <Edit2 size={16} />
+                  <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium print:hidden">
+                    <div className="flex items-center justify-end space-x-2">
+                       <button onClick={() => onEdit(employee)} className="text-blue-600 hover:text-blue-900 bg-blue-50 p-1.5 rounded-full hover:bg-blue-100 transition-colors" title="Edit">
+                        <Edit2 size={14} />
                       </button>
-                      <button onClick={() => handlePrintRow(employee)} className="text-slate-500 hover:text-slate-800 bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition-colors" title="Print Details">
-                        <Printer size={16} />
+                      <button onClick={() => handlePrintRow(employee)} className="text-slate-500 hover:text-slate-800 bg-slate-100 p-1.5 rounded-full hover:bg-slate-200 transition-colors" title="Print Details">
+                        <Printer size={14} />
                       </button>
-                      <button onClick={() => setDeleteConfirmId(employee.id)} className="text-red-500 hover:text-red-800 bg-red-50 p-2 rounded-full hover:bg-red-100 transition-colors" title="Delete">
-                        <Trash2 size={16} />
+                      <button onClick={() => setDeleteConfirmId(employee.id)} className="text-red-500 hover:text-red-800 bg-red-50 p-1.5 rounded-full hover:bg-red-100 transition-colors" title="Delete">
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </td>
@@ -201,7 +226,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center">
-                    <Search className="h-12 w-12 text-slate-300 mb-4" />
+                    <Search className="h-10 w-10 text-slate-300 mb-4" />
                     <p className="text-lg font-medium">No employees found</p>
                     <p className="text-sm">Try adjusting your search or filters</p>
                   </div>
@@ -211,6 +236,50 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
           </tbody>
         </table>
       </div>
+
+      {sortedEmployees.length > 0 && (
+        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between print:hidden">
+          <div className="text-sm text-slate-500">
+            Showing <span className="font-medium text-slate-900">{startIndex + 1}</span> to <span className="font-medium text-slate-900">{Math.min(startIndex + itemsPerPage, sortedEmployees.length)}</span> of <span className="font-medium text-slate-900">{sortedEmployees.length}</span> results
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-md border ${currentPage === 1 ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 text-slate-600 hover:bg-white hover:text-blue-600'}`}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            
+            <div className="hidden sm:flex space-x-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`px-3 py-1 text-sm font-medium rounded-md ${
+                    currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <span className="sm:hidden text-sm font-medium text-slate-700">
+                Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-md border ${currentPage === totalPages ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 text-slate-600 hover:bg-white hover:text-blue-600'}`}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
