@@ -19,11 +19,9 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
 
-  // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterGender, filterStatus]);
@@ -37,10 +35,8 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
     return matchesSearch && matchesGender && matchesStatus;
   });
 
-  // Sort employees to show latest added first (reverse the array)
   const sortedEmployees = [...filteredEmployees].reverse();
 
-  // Pagination logic
   const totalPages = Math.ceil(sortedEmployees.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentEmployees = sortedEmployees.slice(startIndex, startIndex + itemsPerPage);
@@ -60,42 +56,194 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
   };
 
   const handlePrintRow = (employee: Employee) => {
-    const printWindow = window.open('', '', 'height=600,width=800');
+    const printWindow = window.open('', '', 'height=800,width=600');
     if (printWindow) {
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
-            <title>Employee Details - ${employee.firstName} ${employee.lastName}</title>
+            <title>ID Card - ${employee.firstName} ${employee.lastName}</title>
             <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              .header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
-              .profile-img { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin: 0 auto; display: block; }
-              .details { margin-top: 20px; }
-              .row { display: flex; margin-bottom: 10px; }
-              .label { font-weight: bold; width: 150px; }
-              .status { font-weight: bold; color: ${employee.isActive ? 'green' : 'red'}; }
+              @page { margin: 0; size: auto; }
+              body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                background-color: #f1f5f9; 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                min-height: 100vh; 
+                margin: 0; 
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .card {
+                background: white;
+                width: 320px;
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                border: 1px solid #e2e8f0;
+                position: relative;
+              }
+              .card-header {
+                height: 100px;
+                background-color: #2563eb;
+                position: relative;
+              }
+              .card-header::after {
+                content: '';
+                position: absolute;
+                bottom: -20px;
+                left: 0;
+                right: 0;
+                height: 40px;
+                background: white;
+                border-radius: 50% 50% 0 0;
+              }
+              .photo-wrapper {
+                position: absolute;
+                top: 40px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 110px;
+                height: 110px;
+                border-radius: 50%;
+                border: 4px solid white;
+                overflow: hidden;
+                background: #f8fafc;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                z-index: 10;
+              }
+              .photo {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+              }
+              .card-body {
+                padding: 60px 24px 24px;
+                text-align: center;
+              }
+              .name {
+                font-size: 20px;
+                font-weight: 700;
+                color: #0f172a;
+                margin-bottom: 4px;
+              }
+              .designation {
+                font-size: 14px;
+                color: #64748b;
+                margin-bottom: 16px;
+              }
+              .divider {
+                height: 1px;
+                background: #e2e8f0;
+                margin: 16px 0;
+              }
+              .details {
+                text-align: left;
+                font-size: 13px;
+              }
+              .detail-item {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                color: #334155;
+              }
+              .label {
+                color: #64748b;
+                font-weight: 500;
+              }
+              .value {
+                font-weight: 600;
+                text-align: right;
+                max-width: 150px;
+                word-wrap: break-word;
+              }
+              .status-tag {
+                display: inline-block;
+                padding: 4px 12px;
+                border-radius: 9999px;
+                font-size: 12px;
+                font-weight: 600;
+                background-color: ${employee.isActive ? '#dcfce7' : '#fee2e2'};
+                color: ${employee.isActive ? '#166534' : '#991b1b'};
+              }
+              .footer {
+                background: #f8fafc;
+                padding: 12px;
+                text-align: center;
+                border-top: 1px solid #e2e8f0;
+                font-size: 11px;
+                color: #94a3b8;
+              }
+              .logo-text {
+                position: absolute;
+                top: 15px;
+                width: 100%;
+                text-align: center;
+                color: white;
+                font-weight: 600;
+                font-size: 14px;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+              }
+              @media print {
+                body { background: white; -webkit-print-color-adjust: exact; }
+                .card { box-shadow: none; border: 1px solid #ccc; }
+              }
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>Employee Profile</h1>
+            <div class="card">
+              <div class="card-header">
+                <div class="logo-text">EMPLOYEE IDENTITY</div>
+                <div class="photo-wrapper">
+                  ${employee.photo ? `<img src="${employee.photo}" class="photo" alt="Profile" />` : '<div style="width:100%;height:100%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:40px;">👤</div>'}
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="name">${employee.firstName} ${employee.lastName}</div>
+                <div class="designation">Employee ID: ${employee.id}</div>
+                <div style="margin-top:8px;">
+                   <span class="status-tag">${employee.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="details">
+                  <div class="detail-item">
+                    <span class="label">Email</span>
+                    <span class="value">${employee.email}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">Gender</span>
+                    <span class="value">${employee.gender}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">DOB</span>
+                    <span class="value">${employee.dob}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">State</span>
+                    <span class="value">${employee.state}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="footer">
+                Authorized Personnel Only
+              </div>
             </div>
-            ${employee.photo ? `<img src="${employee.photo}" class="profile-img" alt="Profile" />` : ''}
-            <div class="details">
-              <div class="row"><span class="label">Employee ID:</span> <span>${employee.id}</span></div>
-              <div class="row"><span class="label">Full Name:</span> <span>${employee.firstName} ${employee.lastName}</span></div>
-              <div class="row"><span class="label">Email:</span> <span>${employee.email}</span></div>
-              <div class="row"><span class="label">Gender:</span> <span>${employee.gender}</span></div>
-              <div class="row"><span class="label">Date of Birth:</span> <span>${employee.dob}</span></div>
-              <div class="row"><span class="label">State:</span> <span>${employee.state}</span></div>
-              <div class="row"><span class="label">Status:</span> <span class="status">${employee.isActive ? 'Active' : 'Inactive'}</span></div>
-            </div>
+            <script>
+              window.onload = () => {
+                setTimeout(() => {
+                   window.print();
+                }, 500);
+              };
+            </script>
           </body>
         </html>
       `);
       printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
     }
   };
 
@@ -113,7 +261,15 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
   ];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible">
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible print:border-none print:shadow-none">
+      <style>{`
+        @media print {
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+          th { background-color: #f0f0f0 !important; color: black; -webkit-print-color-adjust: exact; }
+          .print-hidden { display: none !important; }
+        }
+      `}</style>
       <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row gap-4 justify-between items-center print:hidden">
         <div className="relative w-full md:w-72">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -147,7 +303,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
+        <table className="min-w-full divide-y divide-slate-200 print:border-collapse">
           <thead className="bg-slate-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Employee</th>
@@ -193,7 +349,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onEdit }) => {
                   </td>
                   <td className="px-6 py-3 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center space-x-3">
-                      <label className="relative inline-flex items-center cursor-pointer">
+                      <label className="relative inline-flex items-center cursor-pointer print:hidden">
                         <input
                             type="checkbox"
                             checked={employee.isActive}
